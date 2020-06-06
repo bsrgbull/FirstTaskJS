@@ -1,14 +1,15 @@
-function Item(name, price) {	//Конструктор для создания объектов товара
+function Item(name, quantity, price) {	//Конструктор для создания объектов товара
     this.name = name;
+    this.quantity = quantity;
     this.price = price;
   }
 
 let arrStorage = [				//Массив с товарами на Складе
-    [new Item("Яблоки",80),     10, 0],		//Вторая колонка - это количество на Складе
-    [new Item("Апельсины", 65), 50, 0],		//Третяя - количество в Корзине
-    [new Item("Груши", 150),    20, 0],
-    [new Item("Помидоры", 100), 25, 0],
-    [new Item("Огурцы", 50),    16, 0]
+    new Item("Яблоки",    10,  80),		
+    new Item("Апельсины", 50,  65),
+    new Item("Груши",     20, 150),
+    new Item("Помидоры",  25, 100),
+    new Item("Огурцы",    16,  50),
   ];
 
 let arrBasket = [];		//Товары в Корзине
@@ -21,48 +22,58 @@ updateTable(table1, arrStorage);	//Первичное заполнение Ск�
 
 function updateTable(table, array) {			//Обновляет Склад или Корзину,
     while(table.rows.length > 1) table.deleteRow(1);    //для этого полностью стирает все
-    let j = ( (array == arrStorage) ? 1:2);		//строки в таблице, затем заполняет
-    for (let i = 0; i < array.length; i++) {		//их товарами из массивов
-        let tr = document.createElement('tr');		//На вход получает таблицу и соответствующий массив
-        tr.innerHTML = 
-	`<td>${array[i][0].name}</td><td>${array[i][j]}</td><td>${array[i][0].price}</td>
-        <input value="+" onclick="add('${array[i][0].name}')" type="button">
-        <input value="-" onclick="del('${array[i][0].name}')" type="button">`;
+    for (let i = 0; i < array.length; i++) {		//строки в таблице, затем заполняет
+        let tr = document.createElement('tr');		//их товарами из массивов
+        tr.innerHTML = 					////На вход получает таблицу и соответствующий массив
+	`<td>${array[i].name}</td><td>${array[i].quantity}</td><td>${array[i].price}</td>
+        <input value="+" onclick="add('${array[i].name}')" type="button">
+        <input value="-" onclick="del('${array[i].name}')" type="button">`;
         table.append(tr);
     }
 }
 
 function add(nameOfItem) {
-    commonCode(nameOfItem, arrStorage, arrBasket, 2, 1);
+    removeItem(nameOfItem, arrStorage, arrBasket);
 }
 
 function del(nameOfItem) {
-    commonCode(nameOfItem, arrBasket, arrStorage, 1, 2);
+    removeItem(nameOfItem, arrBasket, arrStorage);
 }
 
-function commonCode(nameOfItem, array2, array1, j, k) {
-    let index = array2.findIndex(
-        (element, index, array) => {return element[0].name == nameOfItem});
-    if (index > -1 && array2[index][k] >= 0) {
-        if (array2[index][j] == 0) {		   //Чтобы удалить/добавить товар в Корзину/из Корзины
-            array1.push(array2[index]); 	   //требуется одинаковый код, но разные массивы и их столбцы
-        }					   //Получает на вход Название товара, массивы для удаления и
-        array2[index][j]++;       		   //для добавления товара, номера столбцов в массивах
-        array2[index][k]--;
+function removeItem(nameOfItem, arrayToDelete, arrayToAdd) {	//Перемещает товар со склада в корзину и наоборот
+								//Получает на вход Имя товара, массив из которого надо удалить товар, и массив в который надо добавить
+    let rowOfItemToDelete = whichRow(arrayToDelete, nameOfItem);
+    let rowOfItemToAdd = whichRow(arrayToAdd, nameOfItem);	//Вычисляем здесь положение товара в массивах(его индекс), ищем товар по его названию
+
+    if (rowOfItemToDelete > -1 && arrayToDelete[rowOfItemToDelete].quantity >= 0) {	//Проверка на наличие товара на складе
+
+        if (rowOfItemToAdd == -1) {	//Если товара нет в массиве, добавляет туда новый, 1 шт.
+            arrayToAdd.push(new Item(nameOfItem, 1, arrayToDelete[rowOfItemToDelete].price)); 	   
+        } else {         		   
+        arrayToAdd[rowOfItemToAdd].quantity++;
+	}
+
+        arrayToDelete[rowOfItemToDelete].quantity--; 
     
-        if (array2[index][k] == 0) {
-            array2.splice(index,1);
+        if (arrayToDelete[rowOfItemToDelete].quantity == 0) {	//Если после удаления 1 шт. товара его количество = 0, удаляем этот объект из массива
+            arrayToDelete.splice(rowOfItemToDelete,1);
         }
+
         updateTable(table1,arrStorage);
         updateTable(table2,arrBasket);
         updateSumm();
     }
 }
 
+function whichRow(array, nameOfItem) {		//Вычисляет индекс товара в массиве по имени товара, если товар не найден возвращает -1
+    return array.findIndex(
+        (element, index, array) => {return element.name == nameOfItem});
+}
+
 function updateSumm() {		//Обновляет сумму
 	let summ = 0;	
 	for (let i = 0; i < arrBasket.length; i++) {
-		summ += arrBasket[i][2] * arrBasket[i][0].price;	
+		summ += arrBasket[i].quantity * arrBasket[i].price;	
 	}
 	summIndicator.innerHTML = `<h3>${summ}</h3>`;
 }
